@@ -14,7 +14,7 @@ use failure::ResultExt;
 mod srt;
 
 fn clean_subtitle(subtitle: &mut Subtitle) {
-    let regex = Regex::new(r"(?msU)♪.*♪|\(.*\)|^\s*[-‐]|[\p{Upper}\s]+:|<.*>").unwrap();
+    let regex = Regex::new(r"(?msU)♪.*♪|♪|#.*#|\(.*\)|^\s*[-‐]|[\p{Upper}\s]+:|<.*>").unwrap();
 
     subtitle.blocks.retain_mut(|block| {
         let replaced = regex.replace_all(&block.text, "");
@@ -50,6 +50,11 @@ fn main() -> Result<(), ExitFailure> {
         .open(old_path).context("Could not open .old file")?;
     old_file.write_all(input_content.as_bytes())
         .context("Error while writing .old file")?;
+
+    //ensure the input starts without whitespace and ends with two newlines
+    //TODO find a way to do this without copying the string
+    let mut input_content= input_content.trim().to_string();
+    input_content += "\n\n";
 
     let mut subtitle = Subtitle::parse(&input_content)
         .context("Failed to parse subtitle")?;
