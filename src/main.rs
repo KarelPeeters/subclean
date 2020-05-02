@@ -3,18 +3,30 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use clap::Clap;
+use exitfailure::ExitFailure;
+use failure::ResultExt;
 use itertools::Itertools;
 use regex::Regex;
 use retain_mut::RetainMut;
 
 use crate::srt::Subtitle;
-use exitfailure::ExitFailure;
-use failure::ResultExt;
 
 mod srt;
 
+const PATTERNS: &[&'static str] = &[
+    r"♪.*♪",
+    r"♪",
+    r"#.*#",
+    r"\(.*\)",
+    r"\[.*\]",
+    r"^\s*[-‐]",
+    r"[\p{Upper}\s]+:",
+    r"<.*>",
+];
+
 fn clean_subtitle(subtitle: &mut Subtitle) {
-    let regex = Regex::new(r"(?msU)♪.*♪|♪|#.*#|\(.*\)|^\s*[-‐]|[\p{Upper}\s]+:|<.*>").unwrap();
+    let pattern = "(?msU)".to_string() + &PATTERNS.iter().join("|");
+    let regex = Regex::new(&pattern).unwrap();
 
     subtitle.blocks.retain_mut(|block| {
         let replaced = regex.replace_all(&block.text, "");
@@ -53,7 +65,7 @@ fn main() -> Result<(), ExitFailure> {
 
     //ensure the input starts without whitespace and ends with two newlines
     //TODO find a way to do this without copying the string
-    let mut input_content= input_content.trim().to_string();
+    let mut input_content = input_content.trim().to_string();
     input_content += "\n\n";
 
     //TODO maybe move this to the parser
