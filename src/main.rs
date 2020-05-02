@@ -56,6 +56,9 @@ fn main() -> Result<(), ExitFailure> {
     let mut input_content= input_content.trim().to_string();
     input_content += "\n\n";
 
+    //TODO maybe move this to the parser
+    let input_content = input_content.replace("\r\n", "\n");
+
     let mut subtitle = Subtitle::parse(&input_content)
         .context("Failed to parse subtitle")?;
 
