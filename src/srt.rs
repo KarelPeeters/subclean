@@ -36,7 +36,7 @@ impl Display for SubBlock {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct TimePoint { ms: u64 }
+pub struct TimePoint { pub ms: u64 }
 
 impl TimePoint {
     fn from_components(h: u64, m: u64, s: u64, ms: u64) -> TimePoint {

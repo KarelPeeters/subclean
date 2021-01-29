@@ -5,41 +5,15 @@ use std::path::Path;
 use clap::Clap;
 use exitfailure::ExitFailure;
 use failure::ResultExt;
-use itertools::Itertools;
-use regex::Regex;
-use retain_mut::RetainMut;
 
+use crate::clean::clean_subtitle;
 use crate::srt::Subtitle;
 
 mod srt;
+mod clean;
 
-const PATTERNS: &[&'static str] = &[
-    r"♪.*♪",
-    r"♪",
-    r"#.*#",
-    r"\(.*\)",
-    r"\[.*\]",
-    r"^\s*[-‐]",
-    r"[\p{Upper}\s\d]+:",
-    r"<.*>",
-];
-
-fn clean_subtitle(subtitle: &mut Subtitle) {
-    let pattern = "(?msU)".to_string() + &PATTERNS.iter().join("|");
-    let regex = Regex::new(&pattern).unwrap();
-
-    subtitle.blocks.retain_mut(|block| {
-        let replaced = regex.replace_all(&block.text, "");
-        let stripped = replaced.lines().map(str::trim).filter(|s| !s.is_empty()).join("\n");
-
-        if stripped.is_empty() {
-            false
-        } else {
-            block.text = stripped;
-            true
-        }
-    });
-}
+#[cfg(test)]
+mod test;
 
 #[derive(Clap)]
 struct Opts {
