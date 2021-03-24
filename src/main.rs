@@ -24,9 +24,9 @@ struct Opts {
 fn main() -> Result<(), ExitFailure> {
     let opts: Opts = Opts::parse();
 
-    let input_path = Path::new(&opts.input);
+    let input_path = Path::new(&opts.input).with_extension("srt");
     let mut input_file = OpenOptions::new().read(true).write(true).create(false)
-        .open(input_path).with_context(|_| format!("Could not open input {}", opts.input))?;
+        .open(&input_path).with_context(|_| format!("Could not open input path {:?}", input_path))?;
     let mut input_content = String::new();
     input_file.read_to_string(&mut input_content)
         .context("Could not read input")?;
