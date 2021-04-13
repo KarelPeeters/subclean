@@ -32,3 +32,8 @@ fn time() {
 fn speaker() {
     assert_eq!(Some("Nice"), map("DAVE 5: Nice").as_deref())
 }
+
+#[test]
+fn speaker_html() {
+    assert_eq!(None, map("<color>MAN</color>:").as_deref())
+}
