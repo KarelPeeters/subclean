@@ -13,7 +13,7 @@ const PATTERNS: &[&'static str] = &[
     r"\(.*\)",
     r"\[.*\]",
     r"^\s*[-‐]",
-    r"\p{Upper}[\p{Upper}\s\d]*:",
+    r"\p{Upper}[\p{Upper}\s\d\-_]*:",
     r"<.*>",
 ];
 
