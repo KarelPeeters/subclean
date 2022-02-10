@@ -6,7 +6,7 @@ use retain_mut::RetainMut;
 
 use crate::srt::Subtitle;
 
-const PATTERNS: &[&'static str] = &[
+const PATTERNS: &[&str] = &[
     r"♪.*♪",
     r"♪",
     r"#.*#",
@@ -34,7 +34,8 @@ pub fn clean_subtitle(subtitle: &mut Subtitle) {
     let pattern = "(?msU)".to_string() + &PATTERNS.iter().join("|");
     let regex = Regex::new(&pattern).unwrap();
 
-    subtitle.blocks.retain_mut(|block| {
+    //TODO replace with stdlib retain_mut once that is stable
+    RetainMut::retain_mut(&mut subtitle.blocks, |block| {
         let replaced = remove_regex_repeated(&regex, &block.text);
         let stripped = replaced.lines().map(str::trim).filter(|s| !s.is_empty()).join("\n");
 
@@ -44,6 +45,6 @@ pub fn clean_subtitle(subtitle: &mut Subtitle) {
             block.text = stripped;
             true
         }
-    });
+    })
 }
 

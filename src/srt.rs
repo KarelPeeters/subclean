@@ -1,5 +1,7 @@
 use std::fmt::{Display, Formatter};
+
 use itertools::Itertools;
+use nom::error::Error;
 
 #[derive(Debug)]
 pub struct Subtitle {
@@ -7,9 +9,13 @@ pub struct Subtitle {
 }
 
 impl Subtitle {
-    pub fn parse(str: &str) -> Result<Subtitle, nom::Err<(String, nom::error::ErrorKind)>> {
+    pub fn parse(str: &str) -> Result<Subtitle, nom::Err<Error<String>>> {
         let str = str.trim_start().trim_start_matches('\u{feff}');
-        parse::subtitle(str).map_err(|e| e.map(|(s, k)| (s.chars().take(20).join(""), k)))
+        parse::subtitle(str).map_err(|e| {
+            e.map(|e| {
+                Error::new(e.input.chars().take(20).join(""), e.code)
+            })
+        })
     }
 }
 
@@ -36,7 +42,9 @@ impl Display for SubBlock {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub struct TimePoint { pub ms: u64 }
+pub struct TimePoint {
+    pub ms: u64,
+}
 
 impl TimePoint {
     fn from_components(h: u64, m: u64, s: u64, ms: u64) -> TimePoint {
@@ -59,13 +67,13 @@ mod parse {
     use nom::bytes::complete::{tag, take_until};
     use nom::character::complete::{digit1, newline};
     use nom::combinator::{map, map_res};
-    use nom::error::{ErrorKind, ParseError};
+    use nom::error::{Error, ErrorKind, ParseError};
     use nom::multi::many_till;
     use nom::sequence::{pair, tuple};
 
     use crate::srt::{SubBlock, Subtitle, TimePoint};
 
-    pub fn subtitle(r: &str) -> Result<Subtitle, Err<(&str, ErrorKind)>> {
+    pub fn subtitle(r: &str) -> Result<Subtitle, nom::Err<Error<&str>>> {
         many_till(sub_block, eof)(r).map(|(_, (blocks, _))| Subtitle { blocks })
     }
 

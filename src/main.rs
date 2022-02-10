@@ -2,9 +2,7 @@ use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-use clap::Clap;
-use exitfailure::ExitFailure;
-use failure::ResultExt;
+use failure::{ensure, Error, ResultExt};
 
 use crate::clean::clean_subtitle;
 use crate::srt::Subtitle;
@@ -15,16 +13,26 @@ mod clean;
 #[cfg(test)]
 mod test;
 
-#[derive(Clap)]
-struct Opts {
-    /// The input file
-    input: String,
+fn main() -> Result<(), Error> {
+    let args: Vec<String> = std::env::args().collect();
+
+    ensure!(args.len() == 2, "Usage: subclean [glob pattern]");
+    let pattern = &args[1];
+
+    let entries = glob::glob(pattern)
+        .with_context(|_| "Invalid glob pattern")?;
+    for entry in entries {
+        let entry = entry.with_context(|_| "Error during glob matching")?;
+        clean_single(entry)?;
+    }
+
+    Ok(())
 }
 
-fn main() -> Result<(), ExitFailure> {
-    let opts: Opts = Opts::parse();
+fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
+    let input_path = path.as_ref().with_extension("srt");
+    println!("Cleaning {:?}", input_path);
 
-    let input_path = Path::new(&opts.input).with_extension("srt");
     let mut input_file = OpenOptions::new().read(true).write(true).create(false)
         .open(&input_path).with_context(|_| format!("Could not open input path {:?}", input_path))?;
     let mut input_content = String::new();
