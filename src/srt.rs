@@ -11,11 +11,8 @@ pub struct Subtitle {
 impl Subtitle {
     pub fn parse(str: &str) -> Result<Subtitle, nom::Err<Error<String>>> {
         let str = str.trim_start().trim_start_matches('\u{feff}');
-        parse::subtitle(str).map_err(|e| {
-            e.map(|e| {
-                Error::new(e.input.chars().take(20).join(""), e.code)
-            })
-        })
+        parse::subtitle(str)
+            .map_err(|e| e.map(|e| Error::new(e.input.chars().take(20).join(""), e.code)))
     }
 }
 
@@ -48,7 +45,9 @@ pub struct TimePoint {
 
 impl TimePoint {
     fn from_components(h: u64, m: u64, s: u64, ms: u64) -> TimePoint {
-        TimePoint { ms: ms + 1000 * s + 60 * 1000 * m + 60 * 60 * 1000 * h }
+        TimePoint {
+            ms: ms + 1000 * s + 60 * 1000 * m + 60 * 60 * 1000 * h,
+        }
     }
 }
 
@@ -63,13 +62,13 @@ impl Display for TimePoint {
 }
 
 mod parse {
-    use nom::{Err, InputLength, IResult};
     use nom::bytes::complete::{tag, take_until};
     use nom::character::complete::{digit1, newline};
     use nom::combinator::{map, map_res};
     use nom::error::{Error, ErrorKind, ParseError};
     use nom::multi::many_till;
     use nom::sequence::{pair, tuple};
+    use nom::{Err, IResult, InputLength};
 
     use crate::srt::{SubBlock, Subtitle, TimePoint};
 
@@ -78,17 +77,32 @@ mod parse {
     }
 
     fn sub_block(r: &str) -> IResult<&str, SubBlock> {
-        map(tuple((number, newline, time_point, tag(" --> "), time_point, newline, text)),
-            |(_number, _, start, _, end, _, text)| SubBlock { start, end, text })(r)
+        map(
+            tuple((
+                number,
+                newline,
+                time_point,
+                tag(" --> "),
+                time_point,
+                newline,
+                text,
+            )),
+            |(_number, _, start, _, end, _, text)| SubBlock { start, end, text },
+        )(r)
     }
 
     fn text(r: &str) -> IResult<&str, String> {
-        map(pair(take_until("\n\n"), tag("\n\n")), |(s, _): (&str, _)| s.to_owned())(r)
+        map(
+            pair(take_until("\n\n"), tag("\n\n")),
+            |(s, _): (&str, _)| s.to_owned(),
+        )(r)
     }
 
     fn time_point(r: &str) -> IResult<&str, TimePoint> {
-        map(tuple((number, tag(":"), number, tag(":"), number, tag(","), number)),
-            |(h, _, m, _, s, _, ms)| TimePoint::from_components(h, m, s, ms))(r)
+        map(
+            tuple((number, tag(":"), number, tag(":"), number, tag(","), number)),
+            |(h, _, m, _, s, _, ms)| TimePoint::from_components(h, m, s, ms),
+        )(r)
     }
 
     fn number(r: &str) -> IResult<&str, u64> {

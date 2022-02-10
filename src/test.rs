@@ -7,7 +7,7 @@ fn map(s: &str) -> Option<String> {
             start: TimePoint { ms: 0 },
             end: TimePoint { ms: 0 },
             text: s.to_string(),
-        }]
+        }],
     };
 
     clean_subtitle(&mut sub);
@@ -15,7 +15,7 @@ fn map(s: &str) -> Option<String> {
     match sub.blocks.len() {
         0 => None,
         1 => Some(sub.blocks.pop().unwrap().text),
-        _ => panic!("Created an extra block, unexpected")
+        _ => panic!("Created an extra block, unexpected"),
     }
 }
 

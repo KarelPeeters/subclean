@@ -7,8 +7,8 @@ use failure::{ensure, Error, ResultExt};
 use crate::clean::clean_subtitle;
 use crate::srt::Subtitle;
 
-mod srt;
 mod clean;
+mod srt;
 
 #[cfg(test)]
 mod test;
@@ -19,8 +19,7 @@ fn main() -> Result<(), Error> {
     ensure!(args.len() == 2, "Usage: subclean [glob pattern]");
     let pattern = &args[1];
 
-    let entries = glob::glob(pattern)
-        .with_context(|_| "Invalid glob pattern")?;
+    let entries = glob::glob(pattern).with_context(|_| "Invalid glob pattern")?;
     for entry in entries {
         let entry = entry.with_context(|_| "Error during glob matching")?;
         clean_single(entry)?;
@@ -33,16 +32,25 @@ fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
     let input_path = path.as_ref().with_extension("srt");
     println!("Cleaning {:?}", input_path);
 
-    let mut input_file = OpenOptions::new().read(true).write(true).create(false)
-        .open(&input_path).with_context(|_| format!("Could not open input path {:?}", input_path))?;
+    let mut input_file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(false)
+        .open(&input_path)
+        .with_context(|_| format!("Could not open input path {:?}", input_path))?;
     let mut input_content = String::new();
-    input_file.read_to_string(&mut input_content)
+    input_file
+        .read_to_string(&mut input_content)
         .context("Could not read input")?;
 
     let old_path = input_path.with_extension("srt.old");
-    let mut old_file = OpenOptions::new().write(true).create_new(true)
-        .open(old_path).context("Could not open .old file")?;
-    old_file.write_all(input_content.as_bytes())
+    let mut old_file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(old_path)
+        .context("Could not open .old file")?;
+    old_file
+        .write_all(input_content.as_bytes())
         .context("Error while writing .old file")?;
 
     //ensure the input starts without whitespace and ends with two newlines
@@ -53,17 +61,19 @@ fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
     //TODO maybe move this to the parser
     let input_content = input_content.replace("\r\n", "\n");
 
-    let mut subtitle = Subtitle::parse(&input_content)
-        .context("Failed to parse subtitle")?;
+    let mut subtitle = Subtitle::parse(&input_content).context("Failed to parse subtitle")?;
 
     clean_subtitle(&mut subtitle);
 
-    input_file.seek(SeekFrom::Start(0))
+    input_file
+        .seek(SeekFrom::Start(0))
         .context("Error while seeking output")?;
     let new_content = subtitle.to_string();
-    input_file.set_len(new_content.as_bytes().len() as u64)
+    input_file
+        .set_len(new_content.as_bytes().len() as u64)
         .context("Error while setting output file size")?;
-    input_file.write_all(new_content.as_bytes())
+    input_file
+        .write_all(new_content.as_bytes())
         .context("Error while writing output")?;
 
     Ok(())

@@ -23,9 +23,7 @@ fn remove_regex_repeated<'s>(regex: &Regex, text: &'s str) -> Cow<'s, str> {
         let new = regex.replace_all(&result, "");
         match new {
             Cow::Borrowed(_) => return result,
-            Cow::Owned(new) => {
-                result = Cow::Owned(new)
-            }
+            Cow::Owned(new) => result = Cow::Owned(new),
         }
     }
 }
@@ -37,7 +35,11 @@ pub fn clean_subtitle(subtitle: &mut Subtitle) {
     //TODO replace with stdlib retain_mut once that is stable
     RetainMut::retain_mut(&mut subtitle.blocks, |block| {
         let replaced = remove_regex_repeated(&regex, &block.text);
-        let stripped = replaced.lines().map(str::trim).filter(|s| !s.is_empty()).join("\n");
+        let stripped = replaced
+            .lines()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .join("\n");
 
         if stripped.is_empty() {
             false
@@ -47,4 +49,3 @@ pub fn clean_subtitle(subtitle: &mut Subtitle) {
         }
     })
 }
-
