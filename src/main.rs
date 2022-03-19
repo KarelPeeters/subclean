@@ -3,6 +3,7 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
 use failure::{ensure, Error, ResultExt};
+use itertools::Itertools;
 
 use crate::clean::clean_subtitle;
 use crate::srt::Subtitle;
@@ -19,9 +20,14 @@ fn main() -> Result<(), Error> {
     ensure!(args.len() == 2, "Usage: subclean [glob pattern]");
     let pattern = &args[1];
 
-    let entries = glob::glob(pattern).with_context(|_| "Invalid glob pattern")?;
+    // collect everything immediately so new files don't intervene
+    let entries: Vec<_> = glob::glob(pattern)
+        .with_context(|_| "Invalid glob pattern")?
+        .into_iter()
+        .try_collect()
+        .with_context(|_| "Error during glob matching")?;
+
     for entry in entries {
-        let entry = entry.with_context(|_| "Error during glob matching")?;
         clean_single(entry)?;
     }
 
