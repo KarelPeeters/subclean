@@ -17,18 +17,31 @@ mod test;
 fn main() -> Result<(), Error> {
     let args: Vec<String> = std::env::args().collect();
 
-    ensure!(args.len() == 2, "Usage: subclean [glob pattern]");
+    let glob = if args.len() == 2 {
+        false
+    } else {
+        ensure!(
+            args.len() == 3 && args[1] == "glob",
+            "Usage: subclean [path] or subclean glob [glob pattern]"
+        );
+        true
+    };
+
     let pattern = &args[1];
 
-    // collect everything immediately so new files don't intervene
-    let entries: Vec<_> = glob::glob(pattern)
-        .with_context(|_| "Invalid glob pattern")?
-        .into_iter()
-        .try_collect()
-        .with_context(|_| "Error during glob matching")?;
+    if glob {
+        // collect everything immediately so new files don't intervene
+        let entries: Vec<_> = glob::glob(pattern)
+            .with_context(|_| "Invalid glob pattern")?
+            .into_iter()
+            .try_collect()
+            .with_context(|_| "Error during glob matching")?;
 
-    for entry in entries {
-        clean_single(entry)?;
+        for entry in entries {
+            clean_single(entry)?;
+        }
+    } else {
+        clean_single(pattern)?;
     }
 
     Ok(())
