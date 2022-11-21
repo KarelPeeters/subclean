@@ -1,6 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use failure::{Error, ResultExt};
 use itertools::Itertools;
@@ -37,24 +37,35 @@ fn main() -> Result<(), Error> {
 
     if glob {
         // collect everything immediately so new files don't intervene
-        let entries: Vec<_> = glob::glob(pattern)
+        let mut entries: Vec<_> = glob::glob(pattern)
             .with_context(|_| "Invalid glob pattern")?
             .into_iter()
             .try_collect()
             .with_context(|_| "Error during glob matching")?;
 
+        // remove duplicate entries
+        for entry in &mut entries {
+            *entry = with_str_ext(&*entry);
+        }
+        entries.dedup();
+
         for entry in entries {
             clean_single(entry)?;
         }
     } else {
-        clean_single(pattern)?;
+        clean_single(with_str_ext(pattern))?;
     }
 
     Ok(())
 }
 
+fn with_str_ext(path: impl AsRef<Path>) -> PathBuf {
+    path.as_ref().with_extension("srt")
+}
+
 fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
-    let input_path = path.as_ref().with_extension("srt");
+    let input_path = path.as_ref();
+    assert!(input_path.extension().map_or(false, |s| s == "srt"));
     println!("Cleaning {:?}", input_path);
 
     let mut input_file = OpenOptions::new()
@@ -62,7 +73,7 @@ fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
         .write(true)
         .create(false)
         .open(&input_path)
-        .with_context(|_| format!("Could not open input path {:?}", input_path))?;
+        .with_context(|_| format!("Could not open input file {:?}", input_path))?;
     let mut input_content = String::new();
     input_file
         .read_to_string(&mut input_content)
