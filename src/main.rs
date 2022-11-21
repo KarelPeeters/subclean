@@ -2,7 +2,7 @@ use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-use failure::{ensure, Error, ResultExt};
+use failure::{Error, ResultExt};
 use itertools::Itertools;
 
 use crate::clean::clean_subtitle;
@@ -14,20 +14,26 @@ mod srt;
 #[cfg(test)]
 mod test;
 
+const USAGE: &str = "Usage: subclean [path] or subclean glob [glob pattern]";
+
 fn main() -> Result<(), Error> {
     let args: Vec<String> = std::env::args().collect();
 
-    let glob = if args.len() == 2 {
-        false
-    } else {
-        ensure!(
-            args.len() == 3 && args[1] == "glob",
-            "Usage: subclean [path] or subclean glob [glob pattern]"
-        );
-        true
-    };
+    let (glob, pattern) = if args.len() == 2 {
+        if args[1] == "--help" || args[1] == "-h" {
+            println!("{}", USAGE);
+            return Ok(());
+        }
 
-    let pattern = &args[1];
+        (false, &args[1])
+    } else {
+        if args.len() != 3 || args[1] != "glob" {
+            println!("{}", USAGE);
+            return Ok(());
+        }
+
+        (true, &args[2])
+    };
 
     if glob {
         // collect everything immediately so new files don't intervene
