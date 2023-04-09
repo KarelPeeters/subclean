@@ -37,3 +37,8 @@ fn speaker() {
 fn speaker_html() {
     assert_eq!(None, map("<color>MAN</color>:").as_deref())
 }
+
+#[test]
+fn speaker_wonky_digit() {
+    assert_eq!(Some("Message"), map("-CH1lD: Message").as_deref())
+}
