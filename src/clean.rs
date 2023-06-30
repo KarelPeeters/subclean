@@ -2,7 +2,6 @@ use std::borrow::Cow;
 
 use itertools::Itertools;
 use regex::Regex;
-use retain_mut::RetainMut;
 
 use crate::srt::Subtitle;
 
@@ -32,8 +31,7 @@ pub fn clean_subtitle(subtitle: &mut Subtitle) {
     let pattern = "(?msU)".to_string() + &PATTERNS.iter().join("|");
     let regex = Regex::new(&pattern).unwrap();
 
-    //TODO replace with stdlib retain_mut once that is stable
-    RetainMut::retain_mut(&mut subtitle.blocks, |block| {
+    subtitle.blocks.retain_mut(|block| {
         let replaced = remove_regex_repeated(&regex, &block.text);
         let stripped = replaced
             .lines()
