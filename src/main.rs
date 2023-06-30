@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::fs::OpenOptions;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
@@ -37,22 +38,39 @@ fn main() -> Result<(), Error> {
 
     if glob {
         // collect everything immediately so new files don't intervene
-        let mut entries: Vec<_> = glob::glob(pattern)
+        let raw_entries: Vec<_> = glob::glob(pattern)
             .with_context(|_| "Invalid glob pattern")?
             .into_iter()
             .try_collect()
             .with_context(|_| "Error during glob matching")?;
 
-        // remove duplicate entries
-        for entry in &mut entries {
-            *entry = with_str_ext(&*entry);
+        // map entries to paths to consider
+        let mut entries = vec![];
+        for path in raw_entries {
+            if path.extension() == Some(OsStr::new("srt")) {
+                // assume srt files actually exist
+                entries.push(path);
+            } else {
+                // only change extension if the srt file actually exists
+                let path_srt = with_str_ext(&path);
+                if path_srt
+                    .try_exists()
+                    .context("Error while checking if file exists")?
+                {
+                    entries.push(path_srt);
+                }
+            }
         }
+
+        // remove duplicate entries
         entries.dedup();
 
+        // clean each entry
         for entry in entries {
             clean_single(entry)?;
         }
     } else {
+        // here we assume the file exists, since the user manually specified it
         clean_single(with_str_ext(pattern))?;
     }
 
