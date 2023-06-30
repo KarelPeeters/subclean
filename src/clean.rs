@@ -14,6 +14,7 @@ const PATTERNS: &[&str] = &[
     r"^\s*[-‐]",
     r"-?\p{Upper}[\w\s\d\-_]*:",
     r"<.*>",
+    r"Subtitles downloaded from www\.OpenSubtitles\.org",
 ];
 
 fn remove_regex_repeated<'s>(regex: &Regex, text: &'s str) -> Cow<'s, str> {
