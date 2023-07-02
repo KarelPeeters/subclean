@@ -18,7 +18,10 @@ mod test;
 const USAGE: &str = "Usage: subclean [path] or subclean glob [glob pattern]";
 
 fn main() -> Result<(), Error> {
-    let args: Vec<String> = std::env::args().collect();
+    let mut args: Vec<String> = std::env::args().collect();
+    let is_dry = |a: &str| a == "-d" || a == "--dry";
+    let dry = args.iter().any(|a| is_dry(a));
+    args = args.into_iter().filter(|a| !is_dry(a)).collect_vec();
 
     let (glob, pattern) = if args.len() == 2 {
         if args[1] == "--help" || args[1] == "-h" {
@@ -67,11 +70,11 @@ fn main() -> Result<(), Error> {
 
         // clean each entry
         for entry in entries {
-            clean_single(entry)?;
+            clean_single(dry, entry)?;
         }
     } else {
         // here we assume the file exists, since the user manually specified it
-        clean_single(with_str_ext(pattern))?;
+        clean_single(dry, with_str_ext(pattern))?;
     }
 
     Ok(())
@@ -81,7 +84,7 @@ fn with_str_ext(path: impl AsRef<Path>) -> PathBuf {
     path.as_ref().with_extension("srt")
 }
 
-fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
+fn clean_single(dry: bool, path: impl AsRef<Path>) -> Result<(), Error> {
     let input_path = path.as_ref();
     assert!(input_path.extension().map_or(false, |s| s == "srt"));
     println!("Cleaning {:?}", input_path);
@@ -108,8 +111,13 @@ fn clean_single(path: impl AsRef<Path>) -> Result<(), Error> {
     clean_subtitle(&mut subtitle);
     let new_content = subtitle.to_string();
 
-    // only write files if something relevant has changed
-    if new_content.trim() != input_content.trim() {
+    let changed = new_content.trim() != input_content.trim();
+    if dry {
+        println!("Changed: {}", changed);
+        return Ok(());
+    }
+
+    if changed {
         // backup to old file
         let old_path = input_path.with_extension("srt.old");
         let mut old_file = OpenOptions::new()
